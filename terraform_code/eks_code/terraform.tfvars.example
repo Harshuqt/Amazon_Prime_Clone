@@ -1,0 +1,12 @@
+# EKS Cluster Configuration Example
+
+region             = "ap-south-1"
+azs                = ["ap-south-1a", "ap-south-1b"]
+kubernetes_version = "1.36"
+node_group_name    = "harshal-node"
+instance_types     = ["t3.medium"]
+extra_tag          = "harshal_Node"
+
+# IAM ARN of the Jenkins Server (or user) to grant Kubernetes admin access.
+# If this matches the user running 'terraform apply', it is safely ignored.
+jenkins_admin_arn  = "arn:aws:iam::123456789012:user/Admin_AWS_CLI"

@@ -1,0 +1,23 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: harshal-app
+  labels:
+    app: harshal-app
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: harshal-app
+  template:
+    metadata:
+      labels:
+        app: harshal-app
+    spec:
+      containers:
+      - name: harshal-container
+        image: 123456789123.dkr.ecr.ap-south-1.amazonaws.com/amazon-prime:latest
+        ports:
+        - containerPort: 3000
+...

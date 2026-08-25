@@ -1,0 +1,311 @@
+terraform {
+  required_providers {
+    aws = {
+      source = "hashicorp/aws"
+      version = "~> 6.0"
+    }
+  }
+}
+
+provider "aws" {
+  region = var.region_name
+}
+
+# STEP 0: CREATE VPC AND SUBNET
+resource "aws_vpc" "jenkins-vpc" {
+  cidr_block           = "10.0.0.0/16"
+  enable_dns_hostnames = true
+  enable_dns_support   = true
+  tags = {
+    Name = "JENKINS-VPC"
+  }
+}
+
+resource "aws_internet_gateway" "jenkins-igw" {
+  vpc_id = aws_vpc.jenkins-vpc.id
+  tags = {
+    Name = "JENKINS-IGW"
+  }
+}
+
+resource "aws_route_table" "jenkins-rt" {
+  vpc_id = aws_vpc.jenkins-vpc.id
+  route {
+    cidr_block = "0.0.0.0/0"
+    gateway_id = aws_internet_gateway.jenkins-igw.id
+  }
+  tags = {
+    Name = "JENKINS-RT"
+  }
+}
+
+resource "aws_subnet" "jenkins-subnet" {
+  vpc_id                  = aws_vpc.jenkins-vpc.id
+  cidr_block              = "10.0.1.0/24"
+  map_public_ip_on_launch = true
+  availability_zone       = "${var.region_name}a"
+  tags = {
+    Name = "JENKINS-SUBNET"
+  }
+}
+
+resource "aws_route_table_association" "jenkins-rt-assoc" {
+  subnet_id      = aws_subnet.jenkins-subnet.id
+  route_table_id = aws_route_table.jenkins-rt.id
+}
+
+# STEP1: CREATE SG
+resource "aws_security_group" "my-sg" {
+  name        = "JENKINS-SERVER-SG"
+  description = "Jenkins Server Ports"
+  vpc_id      = aws_vpc.jenkins-vpc.id
+  
+  # Port 22 is required for SSH Access
+  ingress {
+    description     = "SSH Port"
+    from_port       = 22
+    to_port         = 22
+    protocol        = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  # Port 80 is required for HTTP
+  ingress {
+    description     = "HTTP Port"
+    from_port       = 80
+    to_port         = 80
+    protocol        = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  # Port 443 is required for HTTPS
+  ingress {
+    description     = "HTTPS Port"
+    from_port       = 443
+    to_port         = 443
+    protocol        = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  # Port 2379-2380 is required for etcd-cluster
+  ingress {
+    description     = "etc-cluster Port"
+    from_port       = 2379
+    to_port         = 2380
+    protocol        = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }  
+
+  # Port 3000 is required for Grafana
+  ingress {
+    description     = "NPM Port"
+    from_port       = 3000
+    to_port         = 3000
+    protocol        = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }  
+
+  # Port 6443 is required for KubeAPIServer
+  ingress {
+    description     = "Kube API Server"
+    from_port       = 6443
+    to_port         = 6443
+    protocol        = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }  
+
+  # Port 8080 is required for Jenkins
+  ingress {
+    description     = "Jenkins Port"
+    from_port       = 8080
+    to_port         = 8080
+    protocol        = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }  
+
+  # Port 9000 is required for SonarQube
+  ingress {
+    description     = "SonarQube Port"
+    from_port       = 9000
+    to_port         = 9000
+    protocol        = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }  
+
+  # Port 9090 is required for Prometheus
+  ingress {
+    description     = "Prometheus Port"
+    from_port       = 9090
+    to_port         = 9090
+    protocol        = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }  
+
+  # Port 9100 is required for Prometheus metrics server
+  ingress {
+    description     = "Prometheus Metrics Port"
+    from_port       = 9100
+    to_port         = 9100
+    protocol        = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  } 
+
+  # Port 10250-10260 is required for K8s
+  ingress {
+    description     = "K8s Ports"
+    from_port       = 10250
+    to_port         = 10260
+    protocol        = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }  
+
+  # Port 30000-32767 is required for NodePort
+  ingress {
+    description     = "K8s NodePort"
+    from_port       = 30000
+    to_port         = 32767
+    protocol        = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }  
+
+  # Define outbound rules to allow all
+  egress {
+    from_port       = 0
+    to_port         = 0
+    protocol        = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+}
+
+# STEP2: CREATE EC2 USING PEM & SG
+resource "aws_instance" "my-ec2" {
+  ami           = var.ami   
+  instance_type = var.instance_type
+  key_name      = var.key_name
+  subnet_id     = aws_subnet.jenkins-subnet.id
+  vpc_security_group_ids = [aws_security_group.my-sg.id]
+  
+  root_block_device {
+    volume_size = var.volume_size
+  }
+  
+  tags = {
+    Name = var.server_name
+  }
+  
+    # USING REMOTE-EXEC PROVISIONER TO INSTALL PACKAGES
+  provisioner "remote-exec" {
+    # ESTABLISHING SSH CONNECTION WITH EC2
+    connection {
+      type        = "ssh"
+      private_key = file("${path.module}/${var.key_name}.pem")
+      user        = "ubuntu"
+      host        = self.public_ip
+    }
+
+    inline = [
+      # Install AWS CLI
+      # Ref: https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html
+      "sudo apt install unzip -y",
+      "curl 'https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip' -o 'awscliv2.zip'",
+      "unzip awscliv2.zip",
+      "sudo ./aws/install",
+
+      # Install Docker
+      # Ref: https://docs.docker.com/engine/install/ubuntu/#install-using-the-repository
+      "sudo apt-get update -y",
+      "sudo apt-get install -y ca-certificates curl",
+      "sudo install -m 0755 -d /etc/apt/keyrings",
+      "curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo tee /etc/apt/keyrings/docker.asc",
+      "sudo chmod a+r /etc/apt/keyrings/docker.asc",
+      "echo \"deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable\" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null",
+      "sudo apt-get update -y",
+      "sudo apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin",
+      "sudo usermod -aG docker ubuntu",
+      "sudo chmod 777 /var/run/docker.sock",
+      "docker --version",
+
+      # Install SonarQube (as container)
+      "docker run -d --name sonar -p 9000:9000 --restart always sonarqube:community",
+
+      # Install Trivy
+      # Ref: https://trivy.dev/docs/latest/getting-started/installation/
+      "sudo apt-get install -y wget apt-transport-https gnupg",
+      "wget -qO - https://aquasecurity.github.io/trivy-repo/deb/public.key | gpg --dearmor | sudo tee /usr/share/keyrings/trivy.gpg > /dev/null",
+      "echo 'deb [signed-by=/usr/share/keyrings/trivy.gpg] https://aquasecurity.github.io/trivy-repo/deb generic main' | sudo tee -a /etc/apt/sources.list.d/trivy.list",
+      "sudo apt-get update -y",
+      "sudo apt-get install trivy -y",
+
+      # Install Kubectl
+      # Ref: https://kubernetes.io/docs/tasks/tools/install-kubectl-linux/
+      "curl -LO \"https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl\"",
+      "curl -LO \"https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl.sha256\"",
+      "echo \"$(cat kubectl.sha256)  kubectl\" | sha256sum --check",
+      "chmod +x ./kubectl",
+      "mkdir -p $HOME/bin && cp ./kubectl $HOME/bin/kubectl && export PATH=$HOME/bin:$PATH",
+      "echo 'export PATH=$HOME/bin:$PATH' >> ~/.bashrc",
+      "sudo mv $HOME/bin/kubectl /usr/local/bin/kubectl",
+      "sudo chmod +x /usr/local/bin/kubectl",
+      "kubectl version --client",
+
+      # Install Helm
+      # Ref: https://helm.sh/docs/intro/install/
+      "curl -fsSL -o get_helm.sh https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3",
+      "chmod 700 get_helm.sh",
+      "./get_helm.sh",
+      "helm version",
+
+      # Install ArgoCD
+      # Ref: https://argo-cd.readthedocs.io/en/stable/cli_installation/
+      "VERSION=$(curl -L -s https://raw.githubusercontent.com/argoproj/argo-cd/stable/VERSION)",
+      "curl -sSL -o argocd-linux-amd64 https://github.com/argoproj/argo-cd/releases/download/v$VERSION/argocd-linux-amd64",
+      "sudo install -m 555 argocd-linux-amd64 /usr/local/bin/argocd",
+      "rm argocd-linux-amd64", 
+
+      # Install Java
+      "sudo apt update -y",
+      "sudo apt install openjdk-${var.java_version}-jdk openjdk-${var.java_version}-jre -y",
+      "java -version",
+
+      # Install Jenkins
+      # Ref: https://www.jenkins.io/doc/book/installing/linux/#debianubuntu
+      "sudo wget -O /usr/share/keyrings/jenkins-keyring.asc https://pkg.jenkins.io/debian-stable/jenkins.io-${var.jenkins_key_version}.key",
+      "echo \"deb [signed-by=/usr/share/keyrings/jenkins-keyring.asc] https://pkg.jenkins.io/debian-stable binary/\" | sudo tee /etc/apt/sources.list.d/jenkins.list > /dev/null",
+      "sudo apt-get update -y",
+      "sudo apt-get install -y jenkins",
+      "sudo systemctl start jenkins",
+      "sudo systemctl enable jenkins",
+
+      # Install Tailscale
+      "${var.tailscale_authkey != "" ? "curl -fsSL https://tailscale.com/install.sh | sh && sudo tailscale up --auth-key=${var.tailscale_authkey}" : "echo 'Tailscale installation skipped'"}",
+
+      # Configure Kubectl for EKS
+      "aws eks update-kubeconfig --region ${var.region_name} --name amazon-prime-cluster || echo 'Skipped kubeconfig update (no IAM credentials)'",
+
+      # Get Jenkins initial login password
+      "ip=$(curl -s ifconfig.me)",
+      "pass=$(sudo cat /var/lib/jenkins/secrets/initialAdminPassword)",
+
+      # Output
+      "echo 'Access Jenkins Server here --> http://'$ip':8080'",
+      "echo 'Jenkins Initial Password: '$pass''",
+      "echo 'Access SonarQube Server here --> http://'$ip':9000'",
+      "echo 'SonarQube Username & Password: admin'",
+    ]
+  }
+}  
+
+# STEP3: GET EC2 USER NAME AND PUBLIC IP 
+output "SERVER-SSH-ACCESS" {
+  value = "ubuntu@${aws_instance.my-ec2.public_ip}"
+}
+
+# STEP4: GET EC2 PUBLIC IP 
+output "PUBLIC-IP" {
+  value = "${aws_instance.my-ec2.public_ip}"
+}
+
+# STEP5: GET EC2 PRIVATE IP 
+output "PRIVATE-IP" {
+  value = "${aws_instance.my-ec2.private_ip}"
+}

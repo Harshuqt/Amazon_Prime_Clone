@@ -1,0 +1,17 @@
+# EC2 Server Configuration Example
+
+instance_type = "t3.medium"
+ami           = "ami-01a00762f46d584a1"   # Ubuntu 24.04
+key_name      = "key_pair" # Replace with your key-name without .pem extension
+volume_size   = 30
+region_name   = "ap-south-1"
+server_name   = "JENKINS-SERVER"
+
+# Note: 
+# a. First create a pem-key manually from the AWS console
+# b. Copy it in the same directory as your terraform code
+# c. Make sure it matches key_name above. Example: if key_name is "key", the file must be "key.pem"
+
+jenkins_key_version = "2026"          # E.g. "2023" or "2026"
+tailscale_authkey   = ""              # Optional. Add your tskey-auth-... string here to auto-install Tailscale
+java_version        = "25"            # Java OpenJDK version (e.g. "17", "21", "25")
