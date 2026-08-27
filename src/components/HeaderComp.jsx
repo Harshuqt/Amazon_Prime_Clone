@@ -5,6 +5,9 @@ import HeaderCategoryLi from "./HeaderCategoryLi";
 import Languages from "./Languages";
 
 function Header() {
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [showLogin, setShowLogin] = useState(false);
+  const [userName, setUserName] = useState("Harshal");
   const [isEmpty, setIsEmpty] = useState(true);
   function handleChange(event) {
     if (event.target.value === "") {
@@ -272,64 +275,80 @@ function Header() {
               <div className="header-nav-profile-div">
                 <ol className="header-nav-profile-ol">
                   <li className="header-nav-profile-li">
-                    <label className="header-nav-profile-li-label">
-                      <div className="header-nav-profile-li-label-div">
-                        <span className="header-nav-profile-li-label-div-span-1">
-                          Nikhil
-                        </span>
-                        <span className="header-nav-profile-li-label-div-span-2"></span>
-                      </div>
-                    </label>
-                    <div className="qwert">
-                      <div className="qwert-div">
-                        <label className="qwert-label">Your Account</label>
-                        <ul className="header-nav-profileinfo-ul">
-                          <li className="header-nav-profileinfo-ul-li">
-                            <a href="">Help</a>
-                          </li>
-                          <li className="header-nav-profileinfo-ul-li">
-                            <a href="">Watch Anywhere</a>
-                          </li>
-                          <li className="header-nav-profileinfo-ul-li">
-                            <a href="">Account & Settings</a>
-                          </li>
-                          <li className="header-nav-profileinfo-ul-li">
-                            <a href="">Prime Benefits</a>
-                          </li>
-                          <li className="header-nav-profileinfo-ul-li">
-                            <a href="">Sign out</a>
-                          </li>
-                        </ul>
-                      </div>
-                      <div className="qwert-div">
-                        <label className="qwert-label">Profiles</label>
-                        <ul className="header-nav-profileinfo-ul">
-                          <li className="header-nav-profileinfo-ul-li">
-                            <a href="">Profile A</a>
-                          </li>
-                          <li className="header-nav-profileinfo-ul-li">
-                            <a href="">Profile B</a>
-                          </li>
-                          <li className="header-nav-profileinfo-ul-li">
-                            <a href="">Profile C</a>
-                          </li>
-                          <li className="header-nav-profileinfo-ul-li add-button">
-                            <a href="">
-                              <span className="header-nav-add-profile-span-1"></span>
-                              <span className="header-nav-add-profile-span-2">
-                                Add new
-                              </span>
-                            </a>
-                          </li>
-                          <li className="header-nav-profileinfo-ul-li">
-                            <a href="">Manage profiles</a>
-                          </li>
-                          <li className="header-nav-profileinfo-ul-li">
-                            <a href="">Learn more</a>
-                          </li>
-                        </ul>
-                      </div>
-                    </div>
+                    {isLoggedIn ? (
+                      <>
+                        <label className="header-nav-profile-li-label">
+                          <div className="header-nav-profile-li-label-div">
+                            <span className="header-nav-profile-li-label-div-span-1">
+                              {userName}
+                            </span>
+                            <span className="header-nav-profile-li-label-div-span-2"></span>
+                          </div>
+                        </label>
+                        <div className="qwert">
+                          <div className="qwert-div">
+                            <label className="qwert-label">Your Account</label>
+                            <ul className="header-nav-profileinfo-ul">
+                              <li className="header-nav-profileinfo-ul-li">
+                                <a href="#/">Help</a>
+                              </li>
+                              <li className="header-nav-profileinfo-ul-li">
+                                <a href="#/">Watch Anywhere</a>
+                              </li>
+                              <li className="header-nav-profileinfo-ul-li">
+                                <a href="#/">Account & Settings</a>
+                              </li>
+                              <li className="header-nav-profileinfo-ul-li">
+                                <a href="#/">Prime Benefits</a>
+                              </li>
+                              <li className="header-nav-profileinfo-ul-li">
+                                <a href="#/" onClick={(e) => { e.preventDefault(); setIsLoggedIn(false); }}>Sign out</a>
+                              </li>
+                            </ul>
+                          </div>
+                          <div className="qwert-div">
+                            <label className="qwert-label">Profiles</label>
+                            <ul className="header-nav-profileinfo-ul">
+                              <li className="header-nav-profileinfo-ul-li">
+                                <a href="#/">Profile A</a>
+                              </li>
+                              <li className="header-nav-profileinfo-ul-li">
+                                <a href="#/">Profile B</a>
+                              </li>
+                              <li className="header-nav-profileinfo-ul-li">
+                                <a href="#/">Profile C</a>
+                              </li>
+                              <li className="header-nav-profileinfo-ul-li add-button">
+                                <a href="#/">
+                                  <span className="header-nav-add-profile-span-1"></span>
+                                  <span className="header-nav-add-profile-span-2">
+                                    Add new
+                                  </span>
+                                </a>
+                              </li>
+                              <li className="header-nav-profileinfo-ul-li">
+                                <a href="#/">Manage profiles</a>
+                              </li>
+                              <li className="header-nav-profileinfo-ul-li">
+                                <a href="#/">Learn more</a>
+                              </li>
+                            </ul>
+                          </div>
+                        </div>
+                      </>
+                    ) : (
+                      <label 
+                        className="header-nav-profile-li-label" 
+                        onClick={(e) => { e.preventDefault(); setShowLogin(true); }}
+                        style={{cursor: 'pointer'}}
+                      >
+                        <div className="header-nav-profile-li-label-div">
+                          <span className="header-nav-profile-li-label-div-span-1" style={{color: 'white', paddingRight: '20px', fontWeight: 'bold'}}>
+                            Sign In
+                          </span>
+                        </div>
+                      </label>
+                    )}
                   </li>
                 </ol>
               </div>
@@ -337,6 +356,53 @@ function Header() {
           </div>
         </div>
       </div>
+      {showLogin && (
+        <div style={{
+          position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, 
+          backgroundColor: 'rgba(0,0,0,0.8)', zIndex: 9999, 
+          display: 'flex', justifyContent: 'center', alignItems: 'center'
+        }}>
+          <div style={{
+            backgroundColor: '#19222b', padding: '40px', borderRadius: '8px', 
+            display: 'flex', flexDirection: 'column', gap: '20px',
+            width: '300px', color: 'white', border: '1px solid #333',
+            boxShadow: '0 4px 15px rgba(0,0,0,0.5)'
+          }}>
+            <h2 style={{margin: 0, fontSize: '24px', fontWeight: 'bold'}}>Sign In</h2>
+            <input 
+              type="text" 
+              placeholder="Enter your name" 
+              id="dummy-login-name"
+              style={{ padding: '12px', borderRadius: '4px', border: 'none', fontSize: '16px' }}
+              onKeyDown={(e) => {
+                if(e.key === 'Enter') {
+                  const name = e.target.value;
+                  if(name) {
+                    setUserName(name);
+                    setIsLoggedIn(true);
+                    setShowLogin(false);
+                  }
+                }
+              }}
+            />
+            <button 
+              style={{ padding: '12px', backgroundColor: '#00a8e1', border: 'none', color: 'white', fontWeight: 'bold', borderRadius: '4px', cursor: 'pointer', fontSize: '16px' }}
+              onClick={() => {
+                const name = document.getElementById('dummy-login-name').value;
+                if(name) {
+                  setUserName(name);
+                  setIsLoggedIn(true);
+                  setShowLogin(false);
+                }
+              }}
+            >Login</button>
+            <button 
+              style={{ padding: '12px', backgroundColor: 'transparent', border: '1px solid #555', color: 'white', borderRadius: '4px', cursor: 'pointer', fontSize: '16px' }}
+              onClick={() => setShowLogin(false)}
+            >Cancel</button>
+          </div>
+        </div>
+      )}
     </header>
   );
 }

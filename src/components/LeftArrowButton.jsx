@@ -13,7 +13,7 @@ function LeftArrowButton(props) {
       //   className="arrowbutton"
       className={classname}
       onClick={(event) => {
-        event.target.nextElementSibling.scrollLeft -= 1400; // USE REF HOOK
+        event.currentTarget.nextElementSibling.scrollLeft -= 1400; // USE REF HOOK
       }}
       style={{ gridArea: "left" }}
       //   style={style}
