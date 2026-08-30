@@ -8,6 +8,7 @@ function Header() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [showLogin, setShowLogin] = useState(false);
   const [userName, setUserName] = useState("Harshal");
+  const [loginInputValue, setLoginInputValue] = useState("");
   const [isEmpty, setIsEmpty] = useState(true);
   function handleChange(event) {
     if (event.target.value === "") {
@@ -18,20 +19,21 @@ function Header() {
   }
 
   const [isActive, setIsActive] = useState(false);
-  document.addEventListener("scroll", (event) => {
-    // asd = window.pageYOffset;
-    // console.log(asd);
-    if (
-      window.pageYOffset >
-      document.getElementsByClassName("header-div-1")[0].getBoundingClientRect()
-        .height
-    ) {
-      setIsActive(true);
-    } else {
-      setIsActive(false);
-    }
-  });
+
+  React.useEffect(() => {
+    const handleScroll = () => {
+      const headerDiv = document.getElementsByClassName("header-div-1")[0];
+      if (headerDiv && window.pageYOffset > headerDiv.getBoundingClientRect().height) {
+        setIsActive(true);
+      } else {
+        setIsActive(false);
+      }
+    };
+    document.addEventListener("scroll", handleScroll);
+    return () => document.removeEventListener("scroll", handleScroll);
+  }, []);
   return (
+    <>
     <header style={{ display: "inline" }}>
       <div
         className={isActive ? "header-div-1 header-top-margin" : "header-div-1"}
@@ -356,6 +358,7 @@ function Header() {
           </div>
         </div>
       </div>
+    </header>
       {showLogin && (
         <div style={{
           position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, 
@@ -372,38 +375,37 @@ function Header() {
             <input 
               type="text" 
               placeholder="Enter your name" 
-              id="dummy-login-name"
-              style={{ padding: '12px', borderRadius: '4px', border: 'none', fontSize: '16px' }}
+              value={loginInputValue}
+              onChange={(e) => setLoginInputValue(e.target.value)}
+              style={{ padding: '12px', borderRadius: '4px', border: 'none', fontSize: '16px', color: 'black' }}
               onKeyDown={(e) => {
-                if(e.key === 'Enter') {
-                  const name = e.target.value;
-                  if(name) {
-                    setUserName(name);
-                    setIsLoggedIn(true);
-                    setShowLogin(false);
-                  }
+                if(e.key === 'Enter' && loginInputValue.trim()) {
+                  setUserName(loginInputValue.trim());
+                  setIsLoggedIn(true);
+                  setShowLogin(false);
+                  setLoginInputValue("");
                 }
               }}
             />
             <button 
               style={{ padding: '12px', backgroundColor: '#00a8e1', border: 'none', color: 'white', fontWeight: 'bold', borderRadius: '4px', cursor: 'pointer', fontSize: '16px' }}
               onClick={() => {
-                const name = document.getElementById('dummy-login-name').value;
-                if(name) {
-                  setUserName(name);
+                if(loginInputValue.trim()) {
+                  setUserName(loginInputValue.trim());
                   setIsLoggedIn(true);
                   setShowLogin(false);
+                  setLoginInputValue("");
                 }
               }}
             >Login</button>
             <button 
               style={{ padding: '12px', backgroundColor: 'transparent', border: '1px solid #555', color: 'white', borderRadius: '4px', cursor: 'pointer', fontSize: '16px' }}
-              onClick={() => setShowLogin(false)}
+              onClick={() => { setShowLogin(false); setLoginInputValue(""); }}
             >Cancel</button>
           </div>
         </div>
       )}
-    </header>
+    </>
   );
 }
 

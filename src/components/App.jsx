@@ -6,11 +6,11 @@ import FooterComp from "./FooterComp";
 
 function App() {
   return (
-    <body style={{ backgroundColor: "black" }}>
+    <div style={{ backgroundColor: "black", minHeight: "100vh" }}>
       <HeaderComp />
       <BodyComp />
       <FooterComp />
-    </body>
+    </div>
   );
 }
 
