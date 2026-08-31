@@ -1,0 +1,16 @@
+node_modules
+build
+dist
+.git
+.gitignore
+.env
+.DS_Store
+Dockerfile
+Jenkinsfile
+*.md
+.terraform
+*.tfstate
+*.pem
+k8s_files/
+terraform_code/
+pipeline_script/
