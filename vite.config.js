@@ -5,6 +5,7 @@ export default defineConfig({
   plugins: [react()],
   server: {
     port: 3000,
+    allowedHosts: true,
   },
   build: {
     outDir: 'build' // to match react-scripts build folder for backwards compatibility
